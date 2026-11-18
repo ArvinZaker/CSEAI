@@ -40,7 +40,7 @@
       if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || !viewer.showModal) return;
       event.preventDefault();
       trigger = link;
-      links = Array.from(link.closest(".photos-grid").querySelectorAll(".photo-link"));
+      links = Array.from(link.closest(".slides").querySelectorAll(".photo-link"));
       show(links.indexOf(link));
       viewer.showModal();
     });
@@ -56,5 +56,65 @@
   viewer.addEventListener("close", () => {
     photo.removeAttribute("src");
     if (trigger) trigger.focus();
+  });
+
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  document.querySelectorAll(".slideshow").forEach(slideshow => {
+    const slides = Array.from(slideshow.querySelectorAll(".slides > li"));
+    const controls = slideshow.querySelector(".slideshow-controls");
+    const prev = slideshow.querySelector(".slideshow-prev");
+    const next = slideshow.querySelector(".slideshow-next");
+    const counter = slideshow.querySelector(".slideshow-counter");
+    if (slides.length <= 1) {
+      if (slides[0]) slides[0].classList.add("is-active");
+      if (controls) controls.hidden = true;
+      return;
+    }
+
+    let index = Math.max(0, slides.findIndex(slide => slide.classList.contains("is-active")));
+    let timer = 0;
+    let hovered = slideshow.matches(":hover");
+    let focused = slideshow.contains(document.activeElement);
+
+    function goTo(target) {
+      slides[index].classList.remove("is-active");
+      index = (target + slides.length) % slides.length;
+      slides[index].classList.add("is-active");
+      if (counter) counter.textContent = `${index + 1} / ${slides.length}`;
+    }
+
+    function stopTimer() {
+      if (!timer) return;
+      clearInterval(timer);
+      timer = 0;
+    }
+
+    function startTimer() {
+      stopTimer();
+      if (hovered || focused || reducedMotion.matches || viewer.open) return;
+      timer = setInterval(() => {
+        if (!viewer.open) goTo(index + 1);
+      }, 5000);
+    }
+
+    if (controls) controls.hidden = false;
+    goTo(index);
+    prev.addEventListener("click", () => goTo(index - 1));
+    next.addEventListener("click", () => goTo(index + 1));
+    slideshow.addEventListener("pointerenter", () => { hovered = true; stopTimer(); });
+    slideshow.addEventListener("pointerleave", () => { hovered = false; startTimer(); });
+    slideshow.addEventListener("focusin", () => { focused = true; stopTimer(); });
+    slideshow.addEventListener("focusout", event => {
+      if (!slideshow.contains(event.relatedTarget)) {
+        focused = false;
+        startTimer();
+      }
+    });
+    reducedMotion.addEventListener("change", () => {
+      if (reducedMotion.matches) stopTimer();
+      else startTimer();
+    });
+    viewer.addEventListener("close", startTimer);
+    startTimer();
   });
 })();
