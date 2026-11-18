@@ -100,18 +100,22 @@
 
     function startTimer() {
       stopTimer();
-      if (hovered || focused || reducedMotion.matches || viewer.open) return;
+      if (!hovered || focused || reducedMotion.matches || viewer.open) return;
       timer = setInterval(() => {
         if (!viewer.open) goTo(index + 1);
-      }, 5000);
+      }, 3000);
     }
 
     if (controls) controls.hidden = false;
     goTo(index);
     prev.addEventListener("click", () => goTo(index - 1));
     next.addEventListener("click", () => goTo(index + 1));
-    slideshow.addEventListener("pointerenter", () => { hovered = true; stopTimer(); });
-    slideshow.addEventListener("pointerleave", () => { hovered = false; startTimer(); });
+    slideshow.addEventListener("pointerenter", event => {
+      if (event.pointerType !== "mouse") return;
+      hovered = true;
+      startTimer();
+    });
+    slideshow.addEventListener("pointerleave", () => { hovered = false; stopTimer(); });
     slideshow.addEventListener("focusin", () => { focused = true; stopTimer(); });
     slideshow.addEventListener("focusout", event => {
       if (!slideshow.contains(event.relatedTarget)) {
