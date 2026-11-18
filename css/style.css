@@ -40,6 +40,7 @@
   --viewer-width: 65rem;
   --viewer-height: 70dvh;
   --duration: .15s;
+  --slide-duration: .6s;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -80,7 +81,7 @@
   --focus: #f2b21c;
 }
 *, *::before, *::after { box-sizing: border-box; }
-html { font-family: var(--font); font-size: var(--body-size); line-height: var(--leading); color: var(--text); background: var(--bg); }
+html { scroll-behavior: smooth; font-family: var(--font); font-size: var(--body-size); line-height: var(--leading); color: var(--text); background: var(--bg); }
 body { margin: 0; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { font: inherit; cursor: pointer; }
@@ -115,9 +116,9 @@ p + p { margin-top: var(--space-4); }
 .btn-en { color: var(--on-primary); background: var(--primary); border-color: var(--primary); }
 .btn-pa { color: var(--on-yellow); background: var(--yellow); border-color: var(--yellow); }
 .slideshow { min-width: 0; width: 100%; }
-.slides { list-style: none; margin: 0; padding: 0; }
-.slides li { display: none; }
-.slides li.is-active { display: block; }
+.slides { display: grid; list-style: none; margin: 0; padding: 0; }
+.slides li { grid-area: 1 / 1; min-width: 0; align-self: center; opacity: 0; pointer-events: none; transition: opacity var(--slide-duration) ease; }
+.slides li.is-active { opacity: 1; pointer-events: auto; z-index: 1; }
 .photo-link { display: flex; align-items: center; justify-content: center; width: 100%; border: var(--line) solid var(--border); border-radius: var(--radius); background: var(--bg); transition: border-color var(--duration); }
 .photo-link:hover { border-color: var(--orange); }
 .photo-link img { display: block; width: 100%; height: auto; max-height: calc(var(--space-7) * 8.75); object-fit: contain; border-radius: var(--radius); }
@@ -145,5 +146,16 @@ figcaption { margin-top: var(--space-4); text-align: center; }
   .topic, #about { padding: var(--space-5); }
 }
 @media (prefers-reduced-motion: reduce) {
-  :root { --duration: 0s; }
+  :root { --duration: 0s; --slide-duration: 0s; }
+  html { scroll-behavior: auto; }
+}
+
+.pa { display: block; margin-top: var(--space-1); color: var(--text-muted); font-size: var(--small-size); font-weight: 400; line-height: var(--leading); }
+.btn { flex-direction: column; justify-content: center; }
+.btn .pa { color: inherit; }
+dialog[open] { animation: dialog-open var(--duration) ease-out; }
+@keyframes dialog-open { from { opacity: 0; } to { opacity: 1; } }
+
+@media (prefers-reduced-motion: reduce) {
+  dialog[open] { animation: none; }
 }

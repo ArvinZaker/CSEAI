@@ -34,6 +34,11 @@
     photo.src = link.href;
     photo.alt = link.querySelector("img").alt;
     caption.textContent = photo.alt;
+    const translation = document.createElement("span");
+    translation.className = "pa";
+    translation.lang = "pa";
+    translation.textContent = link.dataset.pa;
+    caption.append(translation);
   }
   document.querySelectorAll(".photo-link").forEach(link => {
     link.addEventListener("click", event => {
@@ -80,6 +85,10 @@
       slides[index].classList.remove("is-active");
       index = (target + slides.length) % slides.length;
       slides[index].classList.add("is-active");
+      slides.forEach((slide, position) => {
+        slide.setAttribute("aria-hidden", String(position !== index));
+        slide.inert = position !== index;
+      });
       if (counter) counter.textContent = `${index + 1} / ${slides.length}`;
     }
 
