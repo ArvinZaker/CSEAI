@@ -66,19 +66,21 @@
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   document.querySelectorAll(".slideshow").forEach(slideshow => {
     const slides = Array.from(slideshow.querySelectorAll(".slides > li"));
-    const controls = slideshow.querySelector(".slideshow-controls");
     const prev = slideshow.querySelector(".slideshow-prev");
     const next = slideshow.querySelector(".slideshow-next");
     const counter = slideshow.querySelector(".slideshow-counter");
     if (slides.length <= 1) {
       if (slides[0]) slides[0].classList.add("is-active");
-      if (controls) controls.hidden = true;
+      if (prev) prev.hidden = true;
+      if (next) next.hidden = true;
+      if (counter) counter.hidden = true;
       return;
     }
 
     let index = Math.max(0, slides.findIndex(slide => slide.classList.contains("is-active")));
     let timer = 0;
-    let hovered = slideshow.matches(":hover");
+    let mouseInside = false;
+    let inView = true;
     let focused = slideshow.contains(document.activeElement);
 
     function goTo(target) {
@@ -98,36 +100,79 @@
       timer = 0;
     }
 
+    function canAutoplay() {
+      return mouseInside && inView && !focused && !reducedMotion.matches && !viewer.open && slideshow.matches(":hover");
+    }
+
     function startTimer() {
       stopTimer();
-      if (!hovered || focused || reducedMotion.matches || viewer.open) return;
+      if (!canAutoplay()) return;
       timer = setInterval(() => {
-        if (!viewer.open) goTo(index + 1);
+        if (!canAutoplay()) {
+          if (!slideshow.matches(":hover")) mouseInside = false;
+          stopTimer();
+          return;
+        }
+        goTo(index + 1);
       }, 3000);
     }
 
-    if (controls) controls.hidden = false;
+    function checkHover() {
+      if (!slideshow.matches(":hover")) {
+        mouseInside = false;
+        stopTimer();
+      }
+    }
+
+    if (prev) prev.hidden = false;
+    if (next) next.hidden = false;
     goTo(index);
-    prev.addEventListener("click", () => goTo(index - 1));
-    next.addEventListener("click", () => goTo(index + 1));
+    if (prev) prev.addEventListener("click", () => goTo(index - 1));
+    if (next) next.addEventListener("click", () => goTo(index + 1));
     slideshow.addEventListener("pointerenter", event => {
       if (event.pointerType !== "mouse") return;
-      hovered = true;
+      mouseInside = true;
       startTimer();
     });
-    slideshow.addEventListener("pointerleave", () => { hovered = false; stopTimer(); });
-    slideshow.addEventListener("focusin", () => { focused = true; stopTimer(); });
+    slideshow.addEventListener("pointerdown", event => {
+      if (event.pointerType !== "mouse") {
+        mouseInside = false;
+        stopTimer();
+      }
+    });
+    slideshow.addEventListener("pointerleave", () => {
+      mouseInside = false;
+      stopTimer();
+    });
+    slideshow.addEventListener("focusin", () => {
+      focused = true;
+      stopTimer();
+    });
     slideshow.addEventListener("focusout", event => {
       if (!slideshow.contains(event.relatedTarget)) {
         focused = false;
-        startTimer();
+        if (slideshow.matches(":hover")) startTimer();
       }
     });
+    window.addEventListener("scroll", checkHover, { passive: true });
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          inView = entry.isIntersecting;
+          if (!inView) {
+            mouseInside = false;
+            stopTimer();
+          }
+        });
+      }, { threshold: 0 });
+      observer.observe(slideshow);
+    }
     reducedMotion.addEventListener("change", () => {
       if (reducedMotion.matches) stopTimer();
-      else startTimer();
+      else if (slideshow.matches(":hover")) startTimer();
     });
-    viewer.addEventListener("close", startTimer);
-    startTimer();
+    viewer.addEventListener("close", () => {
+      if (slideshow.matches(":hover")) startTimer();
+    });
   });
 })();
