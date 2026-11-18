@@ -1,4 +1,30 @@
 (() => {
+  document.querySelectorAll(".carousel").forEach(carousel => {
+    const slides = Array.from(carousel.querySelectorAll(".photo-link"));
+    const controls = carousel.querySelector(".carousel-controls");
+    const status = carousel.querySelector(".carousel-status");
+    let current = 0;
+
+    function show(index) {
+      current = (index + slides.length) % slides.length;
+      slides.forEach((slide, i) => { slide.hidden = i !== current; });
+      status.textContent = slides[current].querySelector("img").alt;
+    }
+
+    if (!slides.length) return;
+    show(0);
+    controls.hidden = slides.length < 2;
+    carousel.querySelector(".carousel-prev").addEventListener("click", () => show(current - 1));
+    carousel.querySelector(".carousel-next").addEventListener("click", () => show(current + 1));
+    carousel.addEventListener("keydown", event => {
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+        event.preventDefault();
+        show(current + (event.key === "ArrowLeft" ? -1 : 1));
+        if (slides.some(slide => slide === document.activeElement)) slides[current].focus();
+      }
+    });
+  });
+
   const links = Array.from(document.querySelectorAll(".photo-link"));
   const lightbox = document.getElementById("lightbox");
   const lightboxImg = document.getElementById("lightbox-img");
@@ -15,22 +41,24 @@
     el !== lightbox && el.tagName !== "SCRIPT"
   );
   let currentIndex = 0;
+  let activeLinks = links;
   let lastFocused = null;
   const focusables = [closeBtn, prevBtn, nextBtn].filter(Boolean);
 
   function showPhoto(index) {
-    currentIndex = (index + links.length) % links.length;
-    const link = links[currentIndex];
+    currentIndex = (index + activeLinks.length) % activeLinks.length;
+    const link = activeLinks[currentIndex];
     const thumb = link.querySelector("img");
     const altText = thumb ? thumb.alt : `Construction site photo ${currentIndex + 1}`;
     lightboxImg.src = link.getAttribute("href");
     lightboxImg.alt = altText;
-    lightboxCaption.textContent = `${altText} (${currentIndex + 1} / ${links.length})`;
+    lightboxCaption.textContent = `${altText} (${currentIndex + 1} / ${activeLinks.length})`;
   }
 
   function openLightbox(index, trigger) {
     lastFocused = trigger;
-    showPhoto(index);
+    activeLinks = Array.from(trigger.closest(".carousel").querySelectorAll(".photo-link"));
+    showPhoto(activeLinks.indexOf(trigger));
     lightbox.hidden = false;
     document.body.style.overflow = "hidden";
     background.forEach(el => { el.inert = true; });
