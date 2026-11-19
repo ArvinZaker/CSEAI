@@ -21,6 +21,17 @@
   });
   preference.addEventListener("change", updateToggle);
 
+  const menuToggle = document.getElementById("menu-toggle");
+  const siteNav = document.getElementById("site-nav");
+  if (menuToggle && siteNav) {
+    siteNav.hidden = true;
+    menuToggle.addEventListener("click", () => {
+      const open = menuToggle.getAttribute("aria-expanded") === "true";
+      menuToggle.setAttribute("aria-expanded", String(!open));
+      siteNav.hidden = open;
+    });
+  }
+
   const viewer = document.getElementById("lightbox");
   const photo = document.getElementById("lightbox-img");
   const caption = document.getElementById("lightbox-caption");
@@ -28,24 +39,37 @@
   let current = 0;
   let trigger;
 
+  if (menuToggle && siteNav) {
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape" && !siteNav.hidden && (!viewer || !viewer.open)) {
+        menuToggle.setAttribute("aria-expanded", "false");
+        siteNav.hidden = true;
+        menuToggle.focus();
+      }
+    });
+  }
+
   function show(index) {
     current = (index + links.length) % links.length;
     const link = links[current];
     photo.src = link.href;
     photo.alt = link.querySelector("img").alt;
     caption.textContent = photo.alt;
-    const translation = document.createElement("span");
-    translation.className = "pa";
-    translation.lang = "pa";
-    translation.textContent = link.dataset.pa;
-    caption.append(translation);
+    if (link.dataset.pa) {
+      const translation = document.createElement("span");
+      translation.className = "pa";
+      translation.lang = "pa";
+      translation.textContent = link.dataset.pa;
+      caption.append(translation);
+    }
   }
   document.querySelectorAll(".photo-link").forEach(link => {
     link.addEventListener("click", event => {
       if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || !viewer.showModal) return;
       event.preventDefault();
       trigger = link;
-      links = Array.from(link.closest(".slides").querySelectorAll(".photo-link"));
+      const group = link.closest(".slides, .handout-pages");
+      links = group ? Array.from(group.querySelectorAll(".photo-link")) : [link];
       show(links.indexOf(link));
       viewer.showModal();
     });
