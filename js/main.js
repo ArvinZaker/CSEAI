@@ -54,6 +54,12 @@
     const link = links[current];
     photo.src = link.href;
     photo.alt = link.querySelector("img").alt;
+    if (link.closest(".slides")) {
+      caption.textContent = "";
+      caption.hidden = true;
+      return;
+    }
+    caption.hidden = false;
     caption.textContent = photo.alt;
     if (link.dataset.pa) {
       const translation = document.createElement("span");
